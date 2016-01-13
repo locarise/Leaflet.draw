@@ -1323,7 +1323,7 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 		}
 	},
 
-	_createRotateMarker: function () {
+	__createRotateMarker: function () {
 		var center = this._getCenter();
 
 		this._rotateMarker = this._createMarker(center, this.options.rotateIcon, 0, -100);
@@ -1337,6 +1337,44 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 		this._bindMarker(this._rotateLine);
 		this._markerGroup.addLayer(this._rotateLine);
 	},
+
+  _createRotateMarker: function(latlng) {
+    var c, p1, p2, mid, center, dx, dy, projector, points, style;
+    center = this._getCenter();
+    points = this._shape.getLatLngs();
+
+    if (points.length == 4) {
+      // normally a rectangle
+      // restore last angle
+
+      projector = this._getPrjs();
+      c = projector.pre(center);
+      p1 = projector.pre(points[0]);
+      p2 = projector.pre(points[1]);
+      mid = {
+        x: (p1.x + p2.x) / 2,
+        y: (p1.y + p2.y) / 2
+      };
+      dy = mid.y - c.y;
+      dx = mid.x - c.x;
+      this._angle = Math.atan(dy / dx) + Math.PI/2;
+    } else {
+      dx = 0;
+      dy = -100;
+      this._angle = 0;
+    }
+
+    this._rotateMarker = this._createMarker(center, this.options.rotateIcon, dx * 1.5, dy * 1.5);
+    style = {
+      dashArray: [10, 7],
+      color: 'black',
+      weight: 2
+    };
+    // rotate line will from center to middle of NE - NW line
+    this._rotateLine = L.lineMarker(center, dx * 1.5, dy * 1.5, style);
+    this._bindMarker(this._rotateLine);
+    return this._markerGroup.addLayer(this._rotateLine);
+  },
 
 	_onMarkerDragStart: function (e) {
 		L.Edit.SimpleShape.prototype._onMarkerDragStart.call(this, e);
@@ -1736,11 +1774,7 @@ L.Polyline.addInitHook(function () {
 
 L.Edit = L.Edit || {};
 
-L.Edit.Rectangle = L.Edit.Path.extend({
-
-// TODO: keep rectangular after rotate !!
-
-});
+L.Edit.Rectangle = L.Edit.Path.extend({});
 
 L.Rectangle.addInitHook(function () {
 	if (L.Edit.Rectangle) {
@@ -2048,11 +2082,12 @@ L.AffineTransform = L.Class.extend({
         origin = this._pre(origin);
         pt = this._pre(pt);
         var angle = Math.atan2(pt.y - origin.y, pt.x - origin.x);
+        L.Draw.LAST_ANGLE = angle + Math.PI/2;
+
         return this.translate(-origin.x, -origin.y).
             rotate(angle - fromAngle).
             translate(origin.x, origin.y);
     },
-
     resize: function(origin, pt1, pt2) {
         origin = this._pre(origin);
         pt1 = this._pre(pt1);

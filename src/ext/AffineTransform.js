@@ -38,11 +38,12 @@ L.AffineTransform = L.Class.extend({
         origin = this._pre(origin);
         pt = this._pre(pt);
         var angle = Math.atan2(pt.y - origin.y, pt.x - origin.x);
+        L.Draw.LAST_ANGLE = angle + Math.PI/2;
+
         return this.translate(-origin.x, -origin.y).
             rotate(angle - fromAngle).
             translate(origin.x, origin.y);
     },
-
     resize: function(origin, pt1, pt2) {
         origin = this._pre(origin);
         pt1 = this._pre(pt1);
