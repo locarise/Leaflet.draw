@@ -1,6 +1,8 @@
 L.Edit = L.Edit || {};
 
 L.Edit.SimpleShape = L.Handler.extend({
+  SHAPE_TYPE: 'Simple',
+
 	options: {
 		moveIcon: new L.DivIcon({
 			iconSize: new L.Point(8, 8),
@@ -28,7 +30,8 @@ L.Edit.SimpleShape = L.Handler.extend({
 	addHooks: function () {
 		var shape = this._shape;
 
-		shape.setStyle(shape.options.editing);
+
+		shape.setStyle(L.Edit.SHAPE_STYLER ? L.Edit.SHAPE_STYLER(this) : shape.options.editing);
 
 		if (shape._map) {
 			this._map = shape._map;

@@ -6,6 +6,8 @@ L.Edit = L.Edit || {};
 
 L.Edit.Poly = L.Edit.Path.extend({
 
+    SHAPE_TYPE: 'Poly',
+
 	_initMarkers : function() {
 		L.Edit.Path.prototype._initMarkers.call(this);
 		this._createEdgeMarkers();

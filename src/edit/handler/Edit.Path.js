@@ -2,6 +2,8 @@ L.Edit = L.Edit || {};
 
 L.Edit.Path = L.Edit.SimpleShape.extend({
 
+  SHAPE_TYPE: 'Path',
+
 	_createMoveMarker: function () {
 		this._moveMarker = this._createMarker(this._getCenter(), this.options.moveIcon);
 	},
@@ -60,11 +62,15 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
     }
 
     this._rotateMarker = this._createMarker(center, this.options.rotateIcon, dx * 1.5, dy * 1.5);
-    style = {
-      dashArray: [10, 7],
-      color: 'black',
-      weight: 2
-    };
+    if (L.Edit.ROTATE_LINE_STYLER) {
+      style = L.Edit.ROTATE_LINE_STYLER(this);
+    } else {
+      style = {
+        dashArray: [3, 3],
+        color: '#00afc4',
+        weight: 2
+      };
+    }
     // rotate line will from center to middle of NE - NW line
     this._rotateLine = L.lineMarker(center, dx * 1.5, dy * 1.5, style);
     this._bindMarker(this._rotateLine);
