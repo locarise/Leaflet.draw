@@ -19,6 +19,10 @@ L.Edit.Poly = L.Edit.Path.extend({
 		var latlngs = this._shape._latlngs,
 			i, j, len, marker;
 
+        if (this._isRectangle) {
+			return;
+		}
+
 		// TODO refactor holes implementation in Polygon to support it here
 
 		for (i = 0, len = latlngs.length; i < len; i++) {

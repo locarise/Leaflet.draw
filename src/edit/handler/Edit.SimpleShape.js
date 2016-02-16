@@ -1,7 +1,50 @@
 L.Edit = L.Edit || {};
 
+L.Edit.isFixture = function (projector, latlngs) {
+  if (latlngs.length == 4) {
+	  // if look like a rectangle: disable resize for fixtures
+	  // to preserve shape
+
+  }
+  return false;
+};
+
 L.Edit.SimpleShape = L.Handler.extend({
   SHAPE_TYPE: 'Simple',
+
+	isRectangle: function() {
+	  if (this._shape.getLatLngs().length != 4) {
+		return false;
+	  }
+	  var angle0 = this._guessAngle(0).angle, angle1 = this._guessAngle(2).angle;
+	  return (
+		(angle1 - angle0) < 0.001 ||
+		(0 <= (Math.PI - (angle1 + angle0)) && (Math.PI - (angle1 + angle0)) < 0.001)
+	  )
+	},
+
+	_guessAngle: function(index) {
+	  var c, p1, p2, mid, center, dx, dy, projector, points;
+	  center = this._getCenter();
+	  points = this._shape.getLatLngs();
+	  projector = this._getPrjs();
+	  c = projector.pre(center);
+	  p1 = projector.pre(points[index % 4]);
+	  p2 = projector.pre(points[(index + 1) % 4]);
+	  mid = {
+		x: (p1.x + p2.x) / 2,
+		y: (p1.y + p2.y) / 2
+	  };
+	  dy = mid.y - c.y;
+	  dx = mid.x - c.x;
+	  angle = Math.atan(dy / dx) + (Math.PI / 2);
+	  console.log('Guessed angle', rad2deg(angle));
+	  return {
+		  angle: angle,
+		  dy: dy,
+		  dx: dx
+	  }
+	},
 
 	options: {
 		moveIcon: new L.DivIcon({
@@ -35,6 +78,7 @@ L.Edit.SimpleShape = L.Handler.extend({
 
 		if (shape._map) {
 			this._map = shape._map;
+			this._isRectangle = this.isRectangle();
 
 			if (!this._markerGroup) {
 				this._initMarkers();
@@ -50,7 +94,9 @@ L.Edit.SimpleShape = L.Handler.extend({
 
 		if (shape._map) {
 			this._unbindMarker(this._moveMarker);
-			this._unbindMarker(this._rotateMarker);
+			if (this._rotateMarker) {
+			  this._unbindMarker(this._rotateMarker);
+			}
 
 			for (var i = 0, l = this._resizeMarkers.length; i < l; i++) {
 				this._unbindMarker(this._resizeMarkers[i]);

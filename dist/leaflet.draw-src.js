@@ -1129,8 +1129,48 @@ L.Marker.addInitHook(function () {
 
 L.Edit = L.Edit || {};
 
+L.Edit.isFixture = function (projector, latlngs) {
+  if (latlngs.length == 4) {
+	  // if look like a rectangle: disable resize for fixtures
+	  // to preserve shape
+
+  }
+  return false;
+};
+
 L.Edit.SimpleShape = L.Handler.extend({
   SHAPE_TYPE: 'Simple',
+
+	isRectangle: function() {
+	  if (this._shape.getLatLngs().length != 4) {
+		return false;
+	  }
+	  var angle0 = this._guessAngle(0).angle, angle1 = this._guessAngle(2).angle;
+	  return ((angle1 - angle0) < 0.1 || ((Math.PI - (angle1 + angle0)) < 0.1))
+	},
+
+	_guessAngle: function(index) {
+	  var c, p1, p2, mid, center, dx, dy, projector, points;
+	  center = this._getCenter();
+	  points = this._shape.getLatLngs();
+	  projector = this._getPrjs();
+	  c = projector.pre(center);
+	  p1 = projector.pre(points[index % 4]);
+	  p2 = projector.pre(points[(index + 1) % 4]);
+	  mid = {
+		x: (p1.x + p2.x) / 2,
+		y: (p1.y + p2.y) / 2
+	  };
+	  dy = mid.y - c.y;
+	  dx = mid.x - c.x;
+	  angle = Math.atan(dy / dx) + (Math.PI / 2);
+	  console.log('Guessed angle', rad2deg(angle));
+	  return {
+		  angle: angle,
+		  dy: dy,
+		  dx: dx
+	  }
+	},
 
 	options: {
 		moveIcon: new L.DivIcon({
@@ -1322,6 +1362,9 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 
 	_createResizeMarker: function () {
 		var corners = this._getCorners();
+		if (this.isRectangle()) {
+			return;
+		}
 
 		this._resizeMarkers = [];
 
@@ -1332,106 +1375,65 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 		}
 	},
 
-	__createRotateMarker: function () {
-		var center = this._getCenter();
+    _createRotateMarker: function(latlng) {
+		var style, guess;
 
-		this._rotateMarker = this._createMarker(center, this.options.rotateIcon, 0, -100);
-		this._rotateLine = L.lineMarker(center, 0, -100, {
-			dashArray: [10, 7],
-			color: 'black',
-			weight: 2
-		});
-		this._angle = 0;
-		this._dx = 0;
-		this._dy = -100;
+		if (this._shape.getLatLngs().length == 4) {
+		  // normally a rectangle
+		  // TODO: verify corner is right angle
+		  // restore last angle
 
-		this._bindMarker(this._rotateLine);
-		this._markerGroup.addLayer(this._rotateLine);
-	},
-
-  _guessAngle: function(index) {
-    var c, p1, p2, mid, center, dx, dy, projector, points;
-	center = this._getCenter();
-	points = this._shape.getLatLngs();
-	projector = this._getPrjs();
-	c = projector.pre(center);
-	p1 = projector.pre(points[index % 4]);
-	p2 = projector.pre(points[(index + 1) % 4]);
-	mid = {
-	  x: (p1.x + p2.x) / 2,
-	  y: (p1.y + p2.y) / 2
-	};
-	dy = mid.y - c.y;
-	dx = mid.x - c.x;
-	angle = Math.atan(dy / dx) + (Math.PI / 2);
-	console.log(rad2deg(angle));
-	return {
-		angle: angle,
-		dy: dy,
-		dx: dx
-	}
-  },
-  _createRotateMarker: function(latlng) {
-    var style, guess;
-
-    if (this._shape.getLatLngs().length == 4) {
-      // normally a rectangle
-	  // TODO: verify corner is right angle
-      // restore last angle
-
-      if (!this._angle) {
-		console.log("Initial");
-		this._angle = Math.PI;
-		// Find smallest initial angle
-		for (var i = 0; i < 4; i++) {
-		  guess = this._guessAngle(i);
-		  if (
-		    guess.dx >= 0 && guess.dy <= 0
-			// try to make rotate hanler in first quarter
-		  ) {
+		  if (!this._angle) {
+			this._angle = Math.PI;
+			// Find smallest initial angle
+			for (var i = 0; i < 4; i++) {
+			  guess = this._guessAngle(i);
+			  if (
+				guess.dx >= 0 && guess.dy <= 0
+				// try to make rotate hanler in first quarter
+			  ) {
+				this._angle = guess.angle;
+				this._rotateIndex = i;
+				this._dx = guess.dx;
+				this._dy = guess.dy;
+			  }
+			}
+		  } else {
+			guess = this._guessAngle(this._rotateIndex);
 			this._angle = guess.angle;
-			this._rotateIndex = i;
 			this._dx = guess.dx;
 			this._dy = guess.dy;
 		  }
+
+		} else {
+			this._angle = 0;
+			this._dx = 0;
+			this._dy = -100;
 		}
-	  } else {
-		console.log("Rotating");
-	    guess = this._guessAngle(this._rotateIndex);
-		this._angle = guess.angle;
-		this._dx = guess.dx;
-		this._dy = guess.dy;
-	  }
 
-    } else {
-		this._angle = 0;
-		this._dx = 0;
-		this._dy = -100;
-	}
-
-    this._rotateMarker = this._createMarker(
-		this._getCenter(),
-		this.options.rotateIcon,
-		this._dx * 1.5, this._dy * 1.5
-	);
-    if (L.Edit.ROTATE_LINE_STYLER) {
-      style = L.Edit.ROTATE_LINE_STYLER(this);
-    } else {
-      style = {
-        dashArray: [3, 3],
-        color: '#00afc4',
-        weight: 2
-      };
-    }
-    // rotate line will from center to middle of NE - NW line
-    this._rotateLine = L.lineMarker(
-		this._getCenter(),
-		this._dx * 1.5, this._dy * 1.5,
-		style
-	);
-    this._bindMarker(this._rotateLine);
-    return this._markerGroup.addLayer(this._rotateLine);
-  },
+		this._rotateMarker = this._createMarker(
+			this._getCenter(),
+			this.options.rotateIcon,
+			this._dx * 1.5, this._dy * 1.5
+		);
+		if (L.Edit.ROTATE_LINE_STYLER) {
+		  style = L.Edit.ROTATE_LINE_STYLER(this);
+		} else {
+		  style = {
+			dashArray: [3, 3],
+			color: '#00afc4',
+			weight: 2
+		  };
+		}
+		// rotate line will from center to middle of NE - NW line
+		this._rotateLine = L.lineMarker(
+			this._getCenter(),
+			this._dx * 1.5, this._dy * 1.5,
+			style
+		);
+		this._bindMarker(this._rotateLine);
+		return this._markerGroup.addLayer(this._rotateLine);
+	  },
 
 	_onMarkerDragStart: function (e) {
 		L.Edit.SimpleShape.prototype._onMarkerDragStart.call(this, e);
@@ -1594,6 +1596,10 @@ L.Edit.Poly = L.Edit.Path.extend({
 
 		var latlngs = this._shape._latlngs,
 			i, j, len, marker;
+
+        if (this.isRectangle()) {
+			return;
+		}
 
 		// TODO refactor holes implementation in Polygon to support it here
 
