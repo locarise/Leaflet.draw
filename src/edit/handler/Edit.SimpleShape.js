@@ -96,13 +96,16 @@ L.Edit.SimpleShape = L.Handler.extend({
 		shape.setStyle(shape.options.original);
 
 		if (shape._map) {
-			this._unbindMarker(this._moveMarker);
+			if (this._moveMarker) {
+			  this._unbindMarker(this._moveMarker);
+			}
 			if (this._rotateMarker) {
 			  this._unbindMarker(this._rotateMarker);
 			}
-
-			for (var i = 0, l = this._resizeMarkers.length; i < l; i++) {
-				this._unbindMarker(this._resizeMarkers[i]);
+			if (this._resizeMarkers) {
+			  for (var i = 0, l = this._resizeMarkers.length; i < l; i++) {
+				  this._unbindMarker(this._resizeMarkers[i]);
+			  }
 			}
 			this._resizeMarkers = null;
 

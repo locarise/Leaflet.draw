@@ -13,13 +13,10 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 	},
 
 	_createResizeMarker: function () {
-		var corners = this._getCorners();
 		this._resizeMarkers = [];
+		var corners = this._getCorners();
 
-		if (this._isRectangle) {
-			return;
-		}
-
+		return; // disable resize
 
 		for (var i = 0, l = corners.length; i < l; i++) {
 			this._resizeMarkers.push(this._createMarker(corners[i], this.options.resizeIcon));
@@ -164,11 +161,14 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 		var corners = this._getCorners(),
 			center = this._getCenter();
 
-		for (var i = 0, l = this._resizeMarkers.length; i < l; i++) {
-			this._resizeMarkers[i].setLatLng(corners[i]);
+		if (this._resizeMarkers) {
+			for (var i = 0, l = this._resizeMarkers.length; i < l; i++) {
+				this._resizeMarkers[i].setLatLng(corners[i]);
+			}
 		}
-
-		this._moveMarker.setLatLng(this._getCenter());
+		if (this._moveMarker) {
+			this._moveMarker.setLatLng(this._getCenter());
+		}
 		if (this._rotateMarker) {
 			var angle = - this._angle;
 			var rotateLength = 1.5 * Math.sqrt(this._dx * this._dx + this._dy * this._dy);
