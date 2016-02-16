@@ -49,15 +49,18 @@ L.Edit.SimpleShape = L.Handler.extend({
 	options: {
 		moveIcon: new L.DivIcon({
 			iconSize: new L.Point(8, 8),
-			className: 'leaflet-div-icon leaflet-editing-icon leaflet-edit-move'
+			className : 'fa fa-arrows',
+			html: ''
 		}),
 		resizeIcon: new L.DivIcon({
-			iconSize: new L.Point(8, 8),
-			className: 'leaflet-div-icon leaflet-editing-icon leaflet-edit-resize'
+		  iconSize: new L.Point(8, 8),
+		  className: 'leaflet-div-icon leaflet-editing-icon leaflet-edit-resize',
+		  html: ""
 		}),
 		rotateIcon : new L.DivIcon({
 			iconSize : new L.Point(8, 8),
-			className : 'leaflet-div-icon leaflet-editing-icon leaflet-edit-rotate'
+			className : 'fa fa-rotate-left',
+			html: ''
 		}),
 		edgeIcon : new L.DivIcon({
 			iconSize: new L.Point(8, 8),

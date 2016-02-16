@@ -63,8 +63,8 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 			this.options.rotateIcon,
 			this._dx * 1.5, this._dy * 1.5
 		);
-		if (L.Edit.ROTATE_LINE_STYLER) {
-		  style = L.Edit.ROTATE_LINE_STYLER(this);
+		if (L.Edit.LINE_STYLER) {
+		  style = L.Edit.LINE_STYLER(this);
 		} else {
 		  style = {
 			dashArray: [3, 3],

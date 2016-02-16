@@ -1146,7 +1146,10 @@ L.Edit.SimpleShape = L.Handler.extend({
 		return false;
 	  }
 	  var angle0 = this._guessAngle(0).angle, angle1 = this._guessAngle(2).angle;
-	  return ((angle1 - angle0) < 0.1 || ((Math.PI - (angle1 + angle0)) < 0.1))
+	  return (
+		(angle1 - angle0) < 0.001 ||
+		(0 <= (Math.PI - (angle1 + angle0)) && (Math.PI - (angle1 + angle0)) < 0.001)
+	  )
 	},
 
 	_guessAngle: function(index) {
@@ -1175,15 +1178,18 @@ L.Edit.SimpleShape = L.Handler.extend({
 	options: {
 		moveIcon: new L.DivIcon({
 			iconSize: new L.Point(8, 8),
-			className: 'leaflet-div-icon leaflet-editing-icon leaflet-edit-move'
+			className : 'fa fa-arrows',
+			html: ''
 		}),
 		resizeIcon: new L.DivIcon({
-			iconSize: new L.Point(8, 8),
-			className: 'leaflet-div-icon leaflet-editing-icon leaflet-edit-resize'
+		  iconSize: new L.Point(8, 8),
+		  className: 'leaflet-div-icon leaflet-editing-icon leaflet-edit-resize',
+		  html: ""
 		}),
 		rotateIcon : new L.DivIcon({
 			iconSize : new L.Point(8, 8),
-			className : 'leaflet-div-icon leaflet-editing-icon leaflet-edit-rotate'
+			className : 'fa fa-rotate-left',
+			html: ''
 		}),
 		edgeIcon : new L.DivIcon({
 			iconSize: new L.Point(8, 8),
@@ -1204,6 +1210,7 @@ L.Edit.SimpleShape = L.Handler.extend({
 
 		if (shape._map) {
 			this._map = shape._map;
+			this._isRectangle = this.isRectangle();
 
 			if (!this._markerGroup) {
 				this._initMarkers();
@@ -1219,7 +1226,9 @@ L.Edit.SimpleShape = L.Handler.extend({
 
 		if (shape._map) {
 			this._unbindMarker(this._moveMarker);
-			this._unbindMarker(this._rotateMarker);
+			if (this._rotateMarker) {
+			  this._unbindMarker(this._rotateMarker);
+			}
 
 			for (var i = 0, l = this._resizeMarkers.length; i < l; i++) {
 				this._unbindMarker(this._resizeMarkers[i]);
@@ -1362,11 +1371,12 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 
 	_createResizeMarker: function () {
 		var corners = this._getCorners();
-		if (this.isRectangle()) {
+		this._resizeMarkers = [];
+
+		if (this._isRectangle) {
 			return;
 		}
 
-		this._resizeMarkers = [];
 
 		for (var i = 0, l = corners.length; i < l; i++) {
 			this._resizeMarkers.push(this._createMarker(corners[i], this.options.resizeIcon));
@@ -1378,12 +1388,12 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
     _createRotateMarker: function(latlng) {
 		var style, guess;
 
-		if (this._shape.getLatLngs().length == 4) {
-		  // normally a rectangle
-		  // TODO: verify corner is right angle
-		  // restore last angle
+		if (!this._isRectangle) {
+			// only enable rotate for rectangle
+			return;
+		}
 
-		  if (!this._angle) {
+		if (!this._angle) {
 			this._angle = Math.PI;
 			// Find smallest initial angle
 			for (var i = 0; i < 4; i++) {
@@ -1398,17 +1408,11 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 				this._dy = guess.dy;
 			  }
 			}
-		  } else {
-			guess = this._guessAngle(this._rotateIndex);
-			this._angle = guess.angle;
-			this._dx = guess.dx;
-			this._dy = guess.dy;
-		  }
-
 		} else {
-			this._angle = 0;
-			this._dx = 0;
-			this._dy = -100;
+		  guess = this._guessAngle(this._rotateIndex);
+		  this._angle = guess.angle;
+		  this._dx = guess.dx;
+		  this._dy = guess.dy;
 		}
 
 		this._rotateMarker = this._createMarker(
@@ -1416,8 +1420,8 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 			this.options.rotateIcon,
 			this._dx * 1.5, this._dy * 1.5
 		);
-		if (L.Edit.ROTATE_LINE_STYLER) {
-		  style = L.Edit.ROTATE_LINE_STYLER(this);
+		if (L.Edit.LINE_STYLER) {
+		  style = L.Edit.LINE_STYLER(this);
 		} else {
 		  style = {
 			dashArray: [3, 3],
@@ -1522,16 +1526,18 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 		}
 
 		this._moveMarker.setLatLng(this._getCenter());
-		var angle = - this._angle;
-		var rotateLength = 1.5 * Math.sqrt(this._dx * this._dx + this._dy * this._dy);
-		var dx = - rotateLength * Math.sin(angle),
-			dy = - rotateLength * Math.cos(angle);
-		console.log('Positioning', Math.floor(dx), Math.floor(dy), rad2deg(angle));
-		this._rotateMarker.setLatLng(center);
-		this._rotateMarker.setOffset(dx, dy);
+		if (this._rotateMarker) {
+			var angle = - this._angle;
+			var rotateLength = 1.5 * Math.sqrt(this._dx * this._dx + this._dy * this._dy);
+			var dx = - rotateLength * Math.sin(angle),
+				dy = - rotateLength * Math.cos(angle);
+			console.log('Positioning', Math.floor(dx), Math.floor(dy), rad2deg(angle));
+			this._rotateMarker.setLatLng(center);
+			this._rotateMarker.setOffset(dx, dy);
 
-		this._rotateLine.setLatLng(center);
-		this._rotateLine.setMoveTo(dx, dy);
+			this._rotateLine.setLatLng(center);
+			this._rotateLine.setMoveTo(dx, dy);
+		}
 	},
 
 	_getPrjs: function() {
@@ -1597,7 +1603,7 @@ L.Edit.Poly = L.Edit.Path.extend({
 		var latlngs = this._shape._latlngs,
 			i, j, len, marker;
 
-        if (this.isRectangle()) {
+        if (this._isRectangle) {
 			return;
 		}
 
@@ -3162,11 +3168,16 @@ L.EditToolbar.Edit = L.Handler.extend({
 		if (this.options.selectedPathOptions) {
 			pathOptions = L.Util.extend({}, this.options.selectedPathOptions);
 
+			if (L.Edit.LINE_STYLER) {
+				pathOptions = L.Edit.LINE_STYLER(layer, pathOptions);
+			}
+
 			// Use the existing color of the layer
 			if (pathOptions.maintainColor) {
 				pathOptions.color = layer.options.color;
 				pathOptions.fillColor = layer.options.fillColor;
 			}
+
 
 			layer.options.original = L.extend({}, layer.options);
 			layer.options.editing = pathOptions;
