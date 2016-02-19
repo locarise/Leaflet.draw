@@ -16,7 +16,10 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 		this._resizeMarkers = [];
 		var corners = this._getCorners();
 
-		return; // disable resize
+		if (L.Edit.DISABLE_SIZE) {
+			// disable resize for all objects
+			return;
+		}
 
 		for (var i = 0, l = corners.length; i < l; i++) {
 			this._resizeMarkers.push(this._createMarker(corners[i], this.options.resizeIcon));
@@ -29,7 +32,7 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 		var style, guess;
 
 		if (!this._isRectangle) {
-			// only enable rotate for rectangle
+			// only enable for rectangle
 			return;
 		}
 

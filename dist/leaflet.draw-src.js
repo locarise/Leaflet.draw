@@ -1129,27 +1129,27 @@ L.Marker.addInitHook(function () {
 
 L.Edit = L.Edit || {};
 
-L.Edit.isFixture = function (projector, latlngs) {
-  if (latlngs.length == 4) {
-	  // if look like a rectangle: disable resize for fixtures
-	  // to preserve shape
-
-  }
-  return false;
-};
-
 L.Edit.SimpleShape = L.Handler.extend({
   SHAPE_TYPE: 'Simple',
 
 	isRectangle: function() {
-	  if (this._shape.getLatLngs().length != 4) {
+	  var projector = this._getPrjs();
+	  var latlngs = this._shape.getLatLngs(),
+		points = [];
+	  if (latlngs.length != 4) {
 		return false;
 	  }
-	  var angle0 = this._guessAngle(0).angle, angle1 = this._guessAngle(2).angle;
-	  return (
-		(angle1 - angle0) < 0.001 ||
-		(0 <= (Math.PI - (angle1 + angle0)) && (Math.PI - (angle1 + angle0)) < 0.001)
-	  )
+
+	  for (var i = 0; i < latlngs.length; i++) {
+		points[i] = projector.pre(latlngs[i]);
+	  }
+
+	  isRightAngle = function (a, b, c) {
+		Math.abs((b.x - a.x) * (b.x - c.x) + (b.y - a.y) * (b.y - c.y)) < 0.001
+	  }
+	  return isRightAngle(points[0], points[1], points[2]) &&
+		isRightAngle(points[3], points[1], points[2]) &&
+		isRightAngle(points[3], points[0], points[2])
 	},
 
 	_guessAngle: function(index) {
@@ -1204,7 +1204,6 @@ L.Edit.SimpleShape = L.Handler.extend({
 
 	addHooks: function () {
 		var shape = this._shape;
-
 
 		shape.setStyle(L.Edit.SHAPE_STYLER ? L.Edit.SHAPE_STYLER(this) : shape.options.editing);
 
@@ -1376,7 +1375,10 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 		this._resizeMarkers = [];
 		var corners = this._getCorners();
 
-		return; // disable resize
+		if (L.Edit.DISABLE_SIZE) {
+			// disable resize for all objects
+			return;
+		}
 
 		for (var i = 0, l = corners.length; i < l; i++) {
 			this._resizeMarkers.push(this._createMarker(corners[i], this.options.resizeIcon));
@@ -1389,7 +1391,7 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 		var style, guess;
 
 		if (!this._isRectangle) {
-			// only enable rotate for rectangle
+			// only enable for rectangle
 			return;
 		}
 
