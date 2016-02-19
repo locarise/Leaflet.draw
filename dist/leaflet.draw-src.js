@@ -1375,7 +1375,7 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 		this._resizeMarkers = [];
 		var corners = this._getCorners();
 
-		if (L.Edit.DISABLE_SIZE) {
+		if (!this.options.enableResize) {
 			// disable resize for all objects
 			return;
 		}
@@ -1390,7 +1390,7 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
     _createRotateMarker: function(latlng) {
 		var style, guess;
 
-		if (!this._isRectangle) {
+		if (!this.options.enableRotation) {
 			// only enable for rectangle
 			return;
 		}
