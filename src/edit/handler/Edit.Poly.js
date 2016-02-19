@@ -140,6 +140,10 @@ L.Edit.Poly = L.Edit.Path.extend({
 		});
 	},
 
+    _getMiddleLatLng: function(marker1, marker2) {
+        return this._getMiddle(marker1.getLatLng(), marker2.getLatLng());
+    },
+
 	_createMiddleMarker: function (marker1, marker2) {
 		var latlng = this._getMiddleLatLng(marker1, marker2),
 			marker = this._createEdgeMarker(latlng),
@@ -206,14 +210,6 @@ L.Edit.Poly = L.Edit.Path.extend({
 		}
 	},
 
-	_getMiddleLatLng: function (marker1, marker2) {
-		var map = this._shape._map,
-			p1 = map.project(marker1.getLatLng()),
-			p2 = map.project(marker2.getLatLng());
-
-		return map.unproject(p1._add(p2)._divideBy(2));
-	},
-
 	_repositionAllMarkers: function () {
 		L.Edit.Path.prototype._repositionAllMarkers.call(this);
 
@@ -224,8 +220,10 @@ L.Edit.Poly = L.Edit.Path.extend({
 			var marker2 = this._markers[i2];
 			marker1.setLatLng(this._shape._latlngs[i1]);
 			marker2.setLatLng(this._shape._latlngs[i2]);
-			if(marker1._middleRight) {
-				marker1._middleRight.setLatLng(this._getMiddleLatLng(marker1, marker2));
+			if (marker1._middleRight) {
+				marker1._middleRight.setLatLng(
+                    this._getMiddleLatLng(marker1, marker2)
+                );
 			}
 		}
 	}

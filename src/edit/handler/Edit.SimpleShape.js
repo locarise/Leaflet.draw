@@ -23,6 +23,14 @@ L.Edit.SimpleShape = L.Handler.extend({
 		isRightAngle(points[3], points[0], points[2])
 	},
 
+	_getMiddle: function (latlng1, latlng2) {
+		var map = this._shape._map,
+			p1 = map.project(latlng1),
+			p2 = map.project(latlng2);
+
+		return map.unproject(p1._add(p2)._divideBy(2));
+	},
+
 	_guessAngle: function(index) {
 	  var c, p1, p2, mid, center, dx, dy, projector, points;
 	  center = this._getCenter();
