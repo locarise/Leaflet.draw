@@ -65,6 +65,10 @@ L.AffineTransform = L.Class.extend({
         if (!isFinite(scaleY) || Math.abs(scaleY) < 1E-7) {
             scaleY = 1;
         }
+        // Force fix-ratio scale
+        if (L.Edit.PROPORTIONAL_RESIZE) {
+            scaleY = scaleX;
+        }
         // perform the scale operation and translate back
         return this.scale(scaleX, scaleY).translate(origin.x, origin.y);
     },
