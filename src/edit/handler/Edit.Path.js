@@ -6,7 +6,7 @@ L.Edit = L.Edit || {};
 
 L.Edit.Path = L.Edit.SimpleShape.extend({
 
-  SHAPE_TYPE: 'Path',
+	SHAPE_TYPE: 'Path',
 
 	_createMoveMarker: function () {
 		this._moveMarker = this._createMarker(this._getCenter(), this.options.moveIcon);
@@ -161,23 +161,34 @@ L.Edit.Path = L.Edit.SimpleShape.extend({
 	},
 
 	_repositionAllMarkers: function () {
-		var corners = this._getCorners(),
-			center = this._getCenter();
+		this._repositionResizeMarkers()
+		this._repositionMoveMarkers()
+		this._repositionRotateMarkers()
+	},
 
+	_repositionMoveMarkers: function() {
+		if (this._moveMarker) {
+			this._moveMarker.setLatLng(this._getCenter());
+		}
+	},
+
+	_repositionResizeMarkers: function() {
+		var corners = this._shape.getLatLngs();
+		debugger;
 		if (this._resizeMarkers) {
 			for (var i = 0, l = this._resizeMarkers.length; i < l; i++) {
 				this._resizeMarkers[i].setLatLng(corners[i]);
 			}
 		}
-		if (this._moveMarker) {
-			this._moveMarker.setLatLng(this._getCenter());
-		}
+	},
+
+	_repositionRotateMarkers: function() {
 		if (this._rotateMarker) {
-			var angle = - this._angle;
+			var angle = - this._angle,
+				center = this._getCenter();
 			var rotateLength = 1.5 * Math.sqrt(this._dx * this._dx + this._dy * this._dy);
 			var dx = - rotateLength * Math.sin(angle),
 				dy = - rotateLength * Math.cos(angle);
-			console.log('Positioning', Math.floor(dx), Math.floor(dy), rad2deg(angle));
 			this._rotateMarker.setLatLng(center);
 			this._rotateMarker.setOffset(dx, dy);
 
