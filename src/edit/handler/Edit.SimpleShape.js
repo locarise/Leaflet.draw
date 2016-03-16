@@ -46,7 +46,6 @@ L.Edit.SimpleShape = L.Handler.extend({
 	  dy = mid.y - c.y;
 	  dx = mid.x - c.x;
 	  angle = Math.atan(dy / dx) + (Math.PI / 2);
-	  console.log('Guessed angle', rad2deg(angle));
 	  return {
 		  angle: angle,
 		  dy: dy,
